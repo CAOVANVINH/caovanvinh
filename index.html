@@ -3,283 +3,518 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thời Khoá Biểu</title>
-    <!-- Tailwind CSS CDN for modern styling -->
+    <title>Thời Khoá Biểu Gia Đình</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f5f7fa;
+            background-color: #f1f5f9;
         }
         .schedule-card {
             background-color: #ffffff;
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 8px 15px -6px rgba(0, 0, 0, 0.05);
             border-radius: 1.5rem;
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .schedule-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 25px 50px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08), 0 12px 20px -8px rgba(0, 0, 0, 0.08);
         }
         .day-header {
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid #f1f5f9;
         }
         .schedule-section {
             border-radius: 1rem;
-            padding: 1rem;
+            padding: 1.25rem;
             margin-bottom: 1rem;
             background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
         }
         .schedule-section.extra {
-            background-color: #e0f2fe; /* light blue for extra classes */
+            background-color: #eff6ff; /* Màu xanh dương nhẹ cho Nga */
+            border-color: #dbeafe;
+        }
+        .schedule-section.extra-b {
+            background-color: #f5f3ff; /* Màu tím nhẹ cho Huyền */
+            border-color: #ede9fe;
+        }
+        .schedule-section.extra-c {
+            background-color: #fffbeb; /* Màu vàng nhẹ cho Quang */
+            border-color: #fef3c7;
         }
         .schedule-title {
             display: flex;
             align-items: center;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #3b82f6;
-            margin-bottom: 0.5rem;
+            color: #2563eb;
+            margin-bottom: 0.75rem;
+        }
+        .schedule-title.title-b {
+            color: #4f46e5;
+        }
+        .schedule-title.title-c {
+            color: #d97706;
         }
         .schedule-icon {
             margin-right: 0.5rem;
         }
         textarea {
-            resize: vertical;
-            overflow-y: hidden;
-            border: 1px solid #d1d5db;
+            resize: none;
+            border: 1px solid #e2e8f0;
             transition: all 0.2s ease-in-out;
             padding: 0.75rem;
-            border-radius: 1rem;
+            border-radius: 0.75rem;
             min-height: 4rem;
-            color: #2c3e50;
-            background-color: #fbfbfb;
-            font-size: 1rem;
+            color: #1e293b;
+            background-color: #ffffff;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
         .message-box {
             position: fixed;
-            top: 20px;
+            top: 24px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) translateY(-20px);
             z-index: 1000;
-            display: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .message-box.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
         }
         .editable-textarea {
             background-color: #ffffff;
-            border-color: #93c5fd; /* blue-300 */
-            box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.5);
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.3);
+        }
+        .editable-textarea-b {
+            background-color: #ffffff;
+            border-color: #c7d2fe;
+            box-shadow: 0 0 0 2px rgba(199, 210, 254, 0.3);
+        }
+        .editable-textarea-c {
+            background-color: #ffffff;
+            border-color: #fcd34d;
+            box-shadow: 0 0 0 2px rgba(252, 211, 77, 0.3);
         }
         .day-button {
-            transition: background-color 0.3s, color 0.3s, transform 0.2s;
-            transform: scale(1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .day-button.active {
-            background-color: #2c3e50;
+            background-color: #1e293b;
             color: white;
-            box-shadow: 0 4px 6px rgba(44, 62, 80, 0.25);
+            box-shadow: 0 10px 15px -3px rgba(30, 41, 59, 0.25);
             transform: scale(1.05);
         }
+        .empty-state {
+            color: #94a3b8;
+            font-style: italic;
+            text-align: center;
+            padding: 0.75rem;
+        }
     </style>
-    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+<body class="min-h-screen flex flex-col items-center p-4 md:p-6 text-slate-800">
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-        <div class="flex flex-col items-center p-6 bg-white rounded-lg shadow-xl">
-            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-900 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300" style="display: none;">
+        <div class="flex flex-col items-center p-6 bg-white rounded-2xl shadow-2xl max-w-xs w-full mx-4 transform scale-95 transition-transform duration-300">
+            <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p class="mt-4 text-gray-700 font-semibold">Đang lưu dữ liệu...</p>
+            <p id="loading-message" class="mt-4 text-slate-700 font-semibold text-center">Đang kết nối lịch học...</p>
         </div>
     </div>
 
-    <!-- Message Box -->
-    <div id="message-box" class="message-box"></div>
+    <!-- Hộp thông báo trạng thái -->
+    <div id="message-box" class="message-box p-4 rounded-xl shadow-xl text-white font-medium flex items-center gap-2"></div>
 
-    <div class="w-full max-w-6xl mx-auto py-8 px-4">
-        <div class="bg-white p-6 md:p-8 rounded-2xl schedule-card mb-6 text-center">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Thời Khoá Biểu</h1>
-            <p id="date-display" class="text-gray-500 mb-4"></p>
+    <div class="w-full max-w-7xl mx-auto py-4 md:py-8">
+        
+        <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card mb-8 text-center border border-slate-100 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-amber-500"></div>
             
-            <!-- Day selection buttons and Auto button -->
-            <div id="day-selection-buttons" class="flex flex-wrap justify-center gap-2 mb-4">
-                <button data-day="Tự Động" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Tự Động</button>
-                <button data-day="Thứ Hai" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Thứ Hai</button>
-                <button data-day="Thứ Ba" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Thứ Ba</button>
-                <button data-day="Thứ Tư" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Thứ Tư</button>
-                <button data-day="Thứ Năm" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Thứ Năm</button>
-                <button data-day="Thứ Sáu" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Thứ Sáu</button>
-                <button data-day="Thứ Bảy" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Thứ Bảy</button>
-                <button data-day="Chủ Nhật" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Chủ Nhật</button>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-2 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Thời Khoá Biểu Gia Đình
+            </h1>
+            <p id="date-display" class="text-slate-500 font-medium mb-6"></p>
+
+            <div id="admin-indicator" class="hidden mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-2 text-sm font-medium max-w-md mx-auto">
+                ⚡ Đang ở Chế độ Admin. Bạn có thể thay đổi lịch trực tiếp và đổi tên của 3 con!
+            </div>
+            
+            <div id="day-selection-buttons" class="flex flex-wrap justify-center gap-2">
+                <button data-day="Tự Động" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Tự Động</button>
+                <button data-day="Thứ Hai" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Hai</button>
+                <button data-day="Thứ Ba" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Ba</button>
+                <button data-day="Thứ Tư" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Tư</button>
+                <button data-day="Thứ Năm" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Năm</button>
+                <button data-day="Thứ Sáu" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Sáu</button>
+                <button data-day="Thứ Bảy" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Bảy</button>
+                <button data-day="Chủ Nhật" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Chủ Nhật</button>
             </div>
 
-            <button id="toggleAdminBtn" class="mt-4 px-6 py-2 bg-blue-500 text-white font-semibold rounded-full hover:bg-blue-600 transition-colors duration-300 transform hover:scale-105">
-                Xem Toàn Bộ Lịch
+            <button id="toggleAdminBtn" class="mt-6 px-6 py-2.5 bg-slate-800 text-white font-semibold rounded-full hover:bg-slate-700 transition-all duration-300 shadow-md flex items-center gap-2 mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                </svg>
+                <span>Xem Toàn Bộ Lịch</span>
             </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Student 1 Schedule -->
-            <div class="bg-white p-6 rounded-2xl schedule-card">
-                <h2 id="student-1-header" class="text-2xl font-bold text-gray-700 mb-4">Học sinh 1</h2>
-                <div id="student-1-schedule" class="space-y-4">
-                    <!-- Day sections will be generated here by JavaScript -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Học sinh 1 (Cao Trần Hằng Nga) -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-blue-500">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-3 w-full">
+                        <span class="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </span>
+                        <div class="w-full">
+                            <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">Học sinh 1</span>
+                            <h2 id="student-1-header" class="text-2xl font-extrabold text-slate-800">Cao Trần Hằng Nga</h2>
+                            <input id="student-1-name-input" type="text" class="hidden text-xl font-extrabold text-blue-700 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200 focus:outline-none w-full" value="Cao Trần Hằng Nga">
+                        </div>
+                    </div>
                 </div>
+                <div id="student-1-schedule" class="space-y-6"></div>
             </div>
 
-            <!-- Student 2 Schedule -->
-            <div class="bg-white p-6 rounded-2xl schedule-card">
-                <h2 id="student-2-header" class="text-2xl font-bold text-gray-700 mb-4">Học sinh 2</h2>
-                <div id="student-2-schedule" class="space-y-4">
-                    <!-- Day sections will be generated here by JavaScript -->
+            <!-- Học sinh 2 (Cao Trần Thảo Huyền) -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-indigo-500">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-3 w-full">
+                        <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </span>
+                        <div class="w-full">
+                            <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Học sinh 2</span>
+                            <h2 id="student-2-header" class="text-2xl font-extrabold text-slate-800">Cao Trần Thảo Huyền</h2>
+                            <input id="student-2-name-input" type="text" class="hidden text-xl font-extrabold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 focus:outline-none w-full" value="Cao Trần Thảo Huyền">
+                        </div>
+                    </div>
                 </div>
+                <div id="student-2-schedule" class="space-y-6"></div>
             </div>
+
+            <!-- Học sinh 3 (Cao Vinh Quang) -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-amber-500">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-3 w-full">
+                        <span class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </span>
+                        <div class="w-full">
+                            <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Học sinh 3</span>
+                            <h2 id="student-3-header" class="text-2xl font-extrabold text-slate-800">Cao Vinh Quang</h2>
+                            <input id="student-3-name-input" type="text" class="hidden text-xl font-extrabold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 focus:outline-none w-full" value="Cao Vinh Quang">
+                        </div>
+                    </div>
+                </div>
+                <div id="student-3-schedule" class="space-y-6"></div>
+            </div>
+
         </div>
     </div>
 
     <script type="module">
         const daysOfWeek = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
-        const student1Name = 'Cao Trần Hằng Nga';
-        const student2Name = 'Cao Trần Thảo Huyền';
+        let student1Name = 'Cao Trần Hằng Nga';
+        let student2Name = 'Cao Trần Thảo Huyền';
+        let student3Name = 'Cao Vinh Quang';
 
         const messageBox = document.getElementById('message-box');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingMessage = document.getElementById('loading-message');
+        const adminIndicator = document.getElementById('admin-indicator');
+        
         const student1Header = document.getElementById('student-1-header');
         const student2Header = document.getElementById('student-2-header');
+        const student3Header = document.getElementById('student-3-header');
+        
+        const student1NameInput = document.getElementById('student-1-name-input');
+        const student2NameInput = document.getElementById('student-2-name-input');
+        const student3NameInput = document.getElementById('student-3-name-input');
+
         const student1ScheduleContainer = document.getElementById('student-1-schedule');
         const student2ScheduleContainer = document.getElementById('student-2-schedule');
+        const student3ScheduleContainer = document.getElementById('student-3-schedule');
+        
         const dateDisplayElement = document.getElementById('date-display');
         const toggleAdminBtn = document.getElementById('toggleAdminBtn');
         const daySelectionButtonsContainer = document.getElementById('day-selection-buttons');
 
         let isAdminMode = false;
         let selectedDay = null;
+        let pollingInterval = null;
 
-        const SUPABASE_URL = 'https://pazpyjdzfyxcttuptfhr.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhenB5amR6Znl4Y3R0dXB0ZmhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczNDQ2MjYsImV4cCI6MjA3MjkyMDYyNn0.avHgrXzh4wkUvlpOtyYTJfOSaRYFQY3Hb2PJGgyLl0g';
+        // Cấu hình thông tin cơ sở dữ liệu Supabase của bạn
+        const SUPABASE_URL = 'https://tjxvwsaqdadmsmjdujdj.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_N-tlbldCW8KyKsyp9qbltg_6req3rZe';
         
         let supabase = null;
 
+        function startPollingFallback() {
+            if (pollingInterval) return;
+            console.log("Kích hoạt chế độ tải dự phòng HTTP Polling (mỗi 8 giây)...");
+            pollingInterval = setInterval(async () => {
+                try {
+                    await fetchInitialData(true);
+                } catch (e) {
+                    console.warn("Background sync failed:", e);
+                }
+            }, 8000);
+        }
+
+        // Hiện thông báo trạng thái
         function showMessage(message, type = 'success') {
             messageBox.textContent = message;
-            messageBox.style.display = 'block';
-            messageBox.className = `message-box p-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            messageBox.classList.remove('bg-green-600', 'bg-rose-600', 'bg-amber-600');
+            
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-600');
+            } else if (type === 'warning') {
+                messageBox.classList.add('bg-amber-600');
+            } else {
+                messageBox.classList.add('bg-rose-600');
+            }
+            
+            messageBox.classList.add('show');
             setTimeout(() => {
-                messageBox.style.display = 'none';
+                messageBox.classList.remove('show');
             }, 3000);
         }
 
-        function showLoading(show, message = 'Đang lưu dữ liệu...') {
-            loadingOverlay.querySelector('p').textContent = message;
-            loadingOverlay.style.display = show ? 'flex' : 'none';
+        function showLoading(show, message = 'Đang kết nối...') {
+            loadingMessage.textContent = message;
+            if (show) {
+                loadingOverlay.style.display = 'flex';
+                setTimeout(() => loadingOverlay.classList.remove('opacity-0'), 10);
+            } else {
+                loadingOverlay.classList.add('opacity-0');
+                setTimeout(() => loadingOverlay.style.display = 'none', 300);
+            }
         }
 
         function generateScheduleContainers() {
             student1ScheduleContainer.innerHTML = '';
             student2ScheduleContainer.innerHTML = '';
+            student3ScheduleContainer.innerHTML = '';
             
-            daysOfWeek.forEach((day, index) => {
+            daysOfWeek.forEach((day) => {
                 const dayId = day.replace(/\s/g, '');
                 
-                // Student 1
+                // Student 1 (A)
                 const daySection1 = document.createElement('div');
                 daySection1.id = `day-section-A-${dayId}`;
-                daySection1.className = 'day-section';
+                daySection1.className = 'day-section transition-all duration-300';
                 daySection1.innerHTML = `
-                    <h3 class="text-xl font-semibold text-gray-600 day-header pb-2 mb-2">${day}</h3>
+                    <h3 class="text-xl font-bold text-slate-700 day-header pb-2 mb-3 flex items-center justify-between">
+                        <span>${day}</span>
+                    </h3>
                     <div class="schedule-section">
                         <div class="schedule-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                             </svg>
                             Lịch học chính
                         </div>
-                        <textarea id="schedule-A-${dayId}" placeholder="Lịch học ${day}..." class="w-full text-gray-800 font-bold" readonly></textarea>
+                        <textarea id="schedule-A-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
                     </div>
                     <div class="schedule-section extra">
                         <div class="schedule-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-blue-600" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
                                 <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
                             </svg>
                             Lịch học thêm
                         </div>
-                        <div id="extra-schedule-A-container-${dayId}" class="space-y-4"></div>
-                        <button class="add-extra-btn mt-4 px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors hidden" data-day-id="${dayId}" data-student-id="A">+ Thêm Lịch</button>
+                        <div id="extra-schedule-A-${dayId}" class="space-y-4"></div>
+                        <div id="empty-extra-A-${dayId}" class="empty-state">Không có lịch học thêm</div>
+                        <button class="add-extra-btn mt-4 px-4 py-2 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="A">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg> Thêm Lịch
+                        </button>
                     </div>
                 `;
                 student1ScheduleContainer.appendChild(daySection1);
 
-                // Student 2
+                // Student 2 (B)
                 const daySection2 = document.createElement('div');
                 daySection2.id = `day-section-B-${dayId}`;
-                daySection2.className = 'day-section';
+                daySection2.className = 'day-section transition-all duration-300';
                 daySection2.innerHTML = `
-                    <h3 class="text-xl font-semibold text-gray-600 day-header pb-2 mb-2">${day}</h3>
+                    <h3 class="text-xl font-bold text-slate-700 day-header pb-2 mb-3 flex items-center justify-between">
+                        <span>${day}</span>
+                    </h3>
                     <div class="schedule-section">
-                        <div class="schedule-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <div class="schedule-title title-b">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                             </svg>
                             Lịch học chính
                         </div>
-                        <textarea id="schedule-B-${dayId}" placeholder="Lịch học ${day}..." class="w-full text-gray-800 font-bold" readonly></textarea>
+                        <textarea id="schedule-B-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
                     </div>
-                    <div class="schedule-section extra">
-                        <div class="schedule-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <div class="schedule-section extra extra-b">
+                        <div class="schedule-title title-b">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
                                 <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
                             </svg>
                             Lịch học thêm
                         </div>
-                        <div id="extra-schedule-B-container-${dayId}" class="space-y-4"></div>
-                        <button class="add-extra-btn mt-4 px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors hidden" data-day-id="${dayId}" data-student-id="B">+ Thêm Lịch</button>
+                        <div id="extra-schedule-B-${dayId}" class="space-y-4"></div>
+                        <div id="empty-extra-B-${dayId}" class="empty-state">Không có lịch học thêm</div>
+                        <button class="add-extra-btn mt-4 px-4 py-2 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="B">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg> Thêm Lịch
+                        </button>
                     </div>
                 `;
                 student2ScheduleContainer.appendChild(daySection2);
+
+                // Student 3 (C) - Cao Vinh Quang
+                const daySection3 = document.createElement('div');
+                daySection3.id = `day-section-C-${dayId}`;
+                daySection3.className = 'day-section transition-all duration-300';
+                daySection3.innerHTML = `
+                    <h3 class="text-xl font-bold text-slate-700 day-header pb-2 mb-3 flex items-center justify-between">
+                        <span>${day}</span>
+                    </h3>
+                    <div class="schedule-section">
+                        <div class="schedule-title title-c">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            Lịch học chính
+                        </div>
+                        <textarea id="schedule-C-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
+                    </div>
+                    <div class="schedule-section extra extra-c">
+                        <div class="schedule-title title-c">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                            </svg>
+                            Lịch học thêm
+                        </div>
+                        <div id="extra-schedule-C-${dayId}" class="space-y-4"></div>
+                        <div id="empty-extra-C-${dayId}" class="empty-state">Không có lịch học thêm</div>
+                        <button class="add-extra-btn mt-4 px-4 py-2 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="C">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg> Thêm Lịch
+                        </button>
+                    </div>
+                `;
+                student3ScheduleContainer.appendChild(daySection3);
             });
         }
 
-        function createExtraScheduleEntryHtml({ start_time = '', end_time = '', teacher_name = '' }) {
-            // Check if isAdminMode is true to show delete button
-            const deleteButtonHtml = isAdminMode ? `
-                <button class="delete-extra-btn self-end sm:self-center bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.728-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            ` : '';
-            return `
-                <div class="extra-schedule-entry flex flex-col sm:flex-row gap-2 items-center bg-gray-50 p-4 rounded-xl shadow-inner">
-                    <div class="flex-1 w-full">
-                        <label class="block text-sm font-medium text-gray-700">Giờ đi</label>
-                        <input type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="VD: 19:00" value="${start_time}" data-field="start_time" ${isAdminMode ? '' : 'readonly'}>
+        function createExtraScheduleEntryHtml({ start_time = '', end_time = '', teacher_name = '' }, studentId = 'A') {
+            let focusRingClass = 'focus:ring-blue-500 focus:border-blue-500';
+            let textColorClass = 'text-blue-700';
+            let timeBadgeBgClass = 'bg-blue-100';
+            let timeBadgeTextClass = 'text-blue-800';
+            
+            if (studentId === 'B') {
+                focusRingClass = 'focus:ring-indigo-500 focus:border-indigo-500';
+                textColorClass = 'text-indigo-700';
+                timeBadgeBgClass = 'bg-indigo-100';
+                timeBadgeTextClass = 'text-indigo-800';
+            }
+            if (studentId === 'C') {
+                focusRingClass = 'focus:ring-amber-500 focus:border-amber-500';
+                textColorClass = 'text-amber-700';
+                timeBadgeBgClass = 'bg-amber-100';
+                timeBadgeTextClass = 'text-amber-800';
+            }
+
+            if (!isAdminMode) {
+                // CHẾ ĐỘ XEM (Thường): Dùng text thuần túy, tự động xuống dòng và co giãn tự nhiên
+                return `
+                    <div class="extra-schedule-entry-view bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg ${timeBadgeBgClass} ${timeBadgeTextClass} flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                ${start_time || '--:--'} - ${end_time || '--:--'}
+                            </span>
+                        </div>
+                        <div class="w-full">
+                            <p class="text-sm font-semibold ${textColorClass} whitespace-normal break-words leading-relaxed">
+                                ${teacher_name || 'Chưa có thông tin Cô/Thầy - Địa điểm'}
+                            </p>
+                        </div>
                     </div>
-                    <div class="flex-1 w-full">
-                        <label class="block text-sm font-medium text-gray-700">Giờ về</label>
-                        <input type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="VD: 20:30" value="${end_time}" data-field="end_time" ${isAdminMode ? '' : 'readonly'}>
+                `;
+            } else {
+                // CHẾ ĐỘ SỬA (Admin): Đưa Cô/Thầy xuống 1 dòng riêng và dùng Textarea để nhìn thấy toàn bộ chữ
+                const deleteButtonHtml = `
+                    <button class="delete-extra-btn bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl p-2 transition-all duration-200 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.728-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                return `
+                    <div class="extra-schedule-entry flex flex-col gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                        <div class="flex flex-row gap-2 items-center">
+                            <div class="w-28 shrink-0">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Giờ đi</label>
+                                <input type="text" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold" placeholder="VD: 17:00" value="${start_time}" data-field="start_time">
+                            </div>
+                            <div class="w-28 shrink-0">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Giờ về</label>
+                                <input type="text" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold" placeholder="VD: 19:00" value="${end_time}" data-field="end_time">
+                            </div>
+                            <div class="flex-1"></div>
+                            <div class="pt-4">${deleteButtonHtml}</div>
+                        </div>
+                        <div class="w-full">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cô/Thầy - Địa điểm (Tự xuống dòng khi lưu)</label>
+                            <textarea rows="2" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold leading-normal" placeholder="VD: Cô Hạnh - Học tại trường" data-field="teacher_name">${teacher_name}</textarea>
+                        </div>
                     </div>
-                    <div class="flex-1 w-full">
-                        <label class="block text-sm font-medium text-gray-700">Cô/Thầy</label>
-                        <input type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="VD: Cô Anh" value="${teacher_name}" data-field="teacher_name" ${isAdminMode ? '' : 'readonly'}>
-                    </div>
-                    ${deleteButtonHtml}
-                </div>
-            `;
+                `;
+            }
         }
         
         function autoResizeTextareas() {
             document.querySelectorAll('textarea').forEach(textarea => {
                 textarea.style.height = 'auto';
-                textarea.style.height = (textarea.scrollHeight + 5) + 'px';
+                textarea.style.height = (textarea.scrollHeight + 4) + 'px';
             });
         }
         
+        // Tính toán hiển thị ngày thích hợp (Trước 18h hiện hôm nay, Sau 18h hiện ngày mai)
         function getTargetDayName() {
             const nowInVietnam = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
             const currentHour = nowInVietnam.getHours();
@@ -293,12 +528,13 @@
             }
 
             const targetScheduleIndex = targetDayJSIndex === 0 ? 6 : targetDayJSIndex - 1;
-
             return daysOfWeek[targetScheduleIndex];
         }
 
         function updateDisplay() {
             if (isAdminMode) {
+                adminIndicator.classList.remove('hidden');
+                
                 document.querySelectorAll('.day-section').forEach(section => {
                     section.style.display = 'block';
                 });
@@ -307,55 +543,82 @@
                     button.classList.remove('active');
                 });
                 
-                // Make main schedule textareas editable
-                document.querySelectorAll('textarea[id^="schedule-A-"], textarea[id^="schedule-B-"]').forEach(textarea => {
+                student1Header.classList.add('hidden');
+                student2Header.classList.add('hidden');
+                student3Header.classList.add('hidden');
+                
+                student1NameInput.classList.remove('hidden');
+                student2NameInput.classList.remove('hidden');
+                student3NameInput.classList.remove('hidden');
+                
+                document.querySelectorAll('textarea[id^="schedule-A-"]').forEach(textarea => {
                     textarea.readOnly = false;
+                    textarea.placeholder = "Nhập lịch học chính...";
                     textarea.classList.add('editable-textarea');
                 });
+                document.querySelectorAll('textarea[id^="schedule-B-"]').forEach(textarea => {
+                    textarea.readOnly = false;
+                    textarea.placeholder = "Nhập lịch học chính...";
+                    textarea.classList.add('editable-textarea-b');
+                });
+                document.querySelectorAll('textarea[id^="schedule-C-"]').forEach(textarea => {
+                    textarea.readOnly = false;
+                    textarea.placeholder = "Nhập lịch học chính...";
+                    textarea.classList.add('editable-textarea-c');
+                });
                 
-                // Show add and delete buttons for extra schedule
                 document.querySelectorAll('.add-extra-btn, .delete-extra-btn').forEach(btn => {
                     btn.classList.remove('hidden');
                 });
-
-                // Make extra schedule inputs editable
-                document.querySelectorAll('.extra-schedule-entry input').forEach(input => {
-                    input.readOnly = false;
-                });
                 
-                student1Header.textContent = `${student1Name}`;
-                student2Header.textContent = `${student2Name}`;
-                toggleAdminBtn.textContent = 'Ẩn Toàn Bộ Lịch';
+                toggleAdminBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg> Ẩn Toàn Bộ Lịch (Lưu)
+                `;
+                toggleAdminBtn.classList.replace('bg-slate-800', 'bg-rose-600');
+                toggleAdminBtn.classList.replace('hover:bg-slate-700', 'hover:bg-rose-500');
             } else {
+                adminIndicator.classList.add('hidden');
+                
+                student1Header.classList.remove('hidden');
+                student2Header.classList.remove('hidden');
+                student3Header.classList.remove('hidden');
+                
+                student1NameInput.classList.add('hidden');
+                student2NameInput.classList.add('hidden');
+                student3NameInput.classList.add('hidden');
+
                 document.querySelectorAll('.day-section').forEach(section => {
                     section.style.display = 'none';
                 });
+                
                 const targetDayId = selectedDay.replace(/\s/g, '');
                 const targetDaySectionA = document.getElementById(`day-section-A-${targetDayId}`);
                 const targetDaySectionB = document.getElementById(`day-section-B-${targetDayId}`);
+                const targetDaySectionC = document.getElementById(`day-section-C-${targetDayId}`);
                 
                 if (targetDaySectionA) targetDaySectionA.style.display = 'block';
                 if (targetDaySectionB) targetDaySectionB.style.display = 'block';
+                if (targetDaySectionC) targetDaySectionC.style.display = 'block';
 
-                // Make main schedule textareas read-only again
-                document.querySelectorAll('textarea[id^="schedule-A-"], textarea[id^="schedule-B-"]').forEach(textarea => {
+                document.querySelectorAll('textarea[id^="schedule-A-"], textarea[id^="schedule-B-"], textarea[id^="schedule-C-"]').forEach(textarea => {
                     textarea.readOnly = true;
-                    textarea.classList.remove('editable-textarea');
+                    textarea.placeholder = "Không có lịch học chính...";
+                    textarea.classList.remove('editable-textarea', 'editable-textarea-b', 'editable-textarea-c');
                 });
 
-                // Hide add and delete buttons for extra schedule
                 document.querySelectorAll('.add-extra-btn, .delete-extra-btn').forEach(btn => {
                     btn.classList.add('hidden');
                 });
 
-                // Make extra schedule inputs read-only
-                document.querySelectorAll('.extra-schedule-entry input').forEach(input => {
-                    input.readOnly = true;
-                });
-
-                student1Header.textContent = `${student1Name}`;
-                student2Header.textContent = `${student2Name}`;
-                toggleAdminBtn.textContent = 'Xem Toàn Bộ Lịch';
+                toggleAdminBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                    </svg> Xem Toàn Bộ Lịch
+                `;
+                toggleAdminBtn.classList.replace('bg-rose-600', 'bg-slate-800');
+                toggleAdminBtn.classList.replace('hover:bg-rose-500', 'hover:bg-slate-700');
             }
         }
 
@@ -368,27 +631,29 @@
                 day: 'numeric',
                 timeZone: 'Asia/Ho_Chi_Minh'
             };
-
             const vietnamDate = now.toLocaleString('vi-VN', dateOptions);
             dateDisplayElement.textContent = `${vietnamDate}`;
         }
 
         async function initializeSupabase() {
-            showLoading(true, 'Đang kết nối đến cơ sở dữ liệu...');
+            showLoading(true, 'Đang kết nối cơ sở dữ liệu gia đình...');
             try {
-                if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-                    throw new Error("Vui lòng cung cấp URL và Anon Key của Supabase để tiếp tục.");
-                }
-                
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
                 await pingSupabase();
-                startRealtimeListeners();
-                await fetchInitialData();
+                await fetchInitialData(false);
+                
+                try {
+                    startRealtimeListeners();
+                } catch (realtimeError) {
+                    console.warn("WebSocket không khả dụng trong Canvas. Kích hoạt HTTP Polling...", realtimeError);
+                    startPollingFallback();
+                }
                 
             } catch (error) {
-                console.error("Error connecting to Supabase:", error);
-                showMessage(error.message, 'error');
+                console.error("Lỗi kết nối database:", error);
+                showMessage("Đang xem ở Chế độ Xem Ngoại Tuyến (Offline View)", 'warning');
+                startPollingFallback();
             } finally {
                 showLoading(false);
             }
@@ -396,67 +661,88 @@
         
         async function pingSupabase() {
             try {
-                const { data, error } = await supabase.from('settings').select('last_ping').eq('id', 'last_ping_record').single();
-                
                 const now = new Date();
-                let lastPingDate = null;
-                if (data && data.last_ping) {
-                    lastPingDate = new Date(data.last_ping);
-                }
-
-                if (!lastPingDate || (now.getTime() - lastPingDate.getTime() > 24 * 60 * 60 * 1000)) {
-                    await supabase.from('settings').upsert({
-                        id: 'last_ping_record',
-                        last_ping: now.toISOString()
-                    }, { onConflict: 'id' });
-                }
+                await supabase.from('settings').upsert({
+                    id: 'last_ping_record',
+                    last_ping: now.toISOString()
+                }, { onConflict: 'id' });
             } catch (error) {
-                console.error("Error pinging Supabase:", error);
+                console.warn("Ping Supabase failed:", error);
             }
         }
 
         function startRealtimeListeners() {
-            supabase.channel('public:settings')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
-                    if (payload.new.id === 'student_names') {
-                        updateNamesUI(payload.new);
-                    }
-                })
-                .subscribe();
+            try {
+                const settingsChannel = supabase.channel('public:settings')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
+                        if (payload.new && payload.new.id === 'student_names') {
+                            updateNamesUI(payload.new);
+                        }
+                    });
 
-            supabase.channel('public:schedules')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, payload => {
-                    if (payload.new) {
-                        renderDay(payload.new.day_id, payload.new);
+                settingsChannel.subscribe((status, err) => {
+                    if (err || status === 'CHANNEL_ERROR') {
+                        startPollingFallback();
                     }
-                })
-                .subscribe();
+                });
+
+                const schedulesChannel = supabase.channel('public:schedules')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, payload => {
+                        if (payload.new) {
+                            renderDay(payload.new.day_id, payload.new);
+                        }
+                    });
+
+                schedulesChannel.subscribe((status, err) => {
+                    if (err || status === 'CHANNEL_ERROR') {
+                        startPollingFallback();
+                    }
+                });
+            } catch (error) {
+                startPollingFallback();
+            }
         }
         
-        async function fetchInitialData() {
-            const { data: namesData, error: namesError } = await supabase.from('settings').select('*').eq('id', 'student_names').single();
-            if (!namesError && namesData) {
-                updateNamesUI(namesData);
-            } else {
-                updateNamesUI({ student1_name: student1Name, student2_name: student2Name });
-            }
+        async function fetchInitialData(quiet = false) {
+            if (!quiet) showLoading(true, 'Đang tải dữ liệu lịch mới nhất...');
+            try {
+                const { data: namesData, error: namesError } = await supabase.from('settings').select('*').eq('id', 'student_names').single();
+                if (!namesError && namesData) {
+                    updateNamesUI(namesData);
+                }
 
-            const { data: schedulesData, error: schedulesError } = await supabase.from('schedules').select('*');
-            if (!schedulesError && schedulesData) {
-                const scheduleMap = schedulesData.reduce((acc, curr) => {
-                    acc[curr.day_id] = curr;
-                    return acc;
-                }, {});
-                renderAllSchedules(scheduleMap);
+                const { data: schedulesData, error: schedulesError } = await supabase.from('schedules').select('*');
+                if (!schedulesError && schedulesData) {
+                    const scheduleMap = schedulesData.reduce((acc, curr) => {
+                        acc[curr.day_id] = curr;
+                        return acc;
+                    }, {});
+                    renderAllSchedules(scheduleMap);
+                }
+                
+                if (!quiet) {
+                    setInitialView();
+                }
+                autoResizeTextareas();
+            } catch (err) {
+                console.error("Lỗi lấy dữ liệu:", err);
+            } finally {
+                if (!quiet) showLoading(false);
             }
-            
-            setInitialView();
-            autoResizeTextareas();
         }
 
         function updateNamesUI(names) {
-            student1Header.textContent = names.student1_name || student1Name;
-            student2Header.textContent = names.student2_name || student2Name;
+            student1Name = names.student1_name || 'Cao Trần Hằng Nga';
+            student2Name = names.student2_name || 'Cao Trần Thảo Huyền';
+            student3Name = names.student3_name || 'Cao Vinh Quang';
+
+            student1Header.textContent = student1Name;
+            student2Header.textContent = student2Name;
+            student3Header.textContent = student3Name;
+
+            student1NameInput.value = student1Name;
+            student2NameInput.value = student2Name;
+            student3NameInput.value = student3Name;
         }
 
         function renderAllSchedules(data) {
@@ -468,9 +754,11 @@
 
         function renderDay(dayId, schedule) {
             const studentATextarea = document.getElementById(`schedule-A-${dayId}`);
-            const extraStudentAContainer = document.getElementById(`extra-schedule-A-container-${dayId}`);
+            const extraStudentAContainer = document.getElementById(`extra-schedule-A-${dayId}`);
             const studentBTextarea = document.getElementById(`schedule-B-${dayId}`);
-            const extraStudentBContainer = document.getElementById(`extra-schedule-B-container-${dayId}`);
+            const extraStudentBContainer = document.getElementById(`extra-schedule-B-${dayId}`);
+            const studentCTextarea = document.getElementById(`schedule-C-${dayId}`);
+            const extraStudentCContainer = document.getElementById(`extra-schedule-C-${dayId}`);
             
             if (studentATextarea) {
                 studentATextarea.value = schedule.student_a || '';
@@ -478,13 +766,14 @@
             if (studentBTextarea) {
                 studentBTextarea.value = schedule.student_b || '';
             }
+            if (studentCTextarea) {
+                studentCTextarea.value = schedule.student_c || '';
+            }
             
-            // Handle structured extra schedules (JSON array)
             try {
                 const extraA = JSON.parse(schedule.extra_student_a || '[]');
                 renderExtraScheduleEntries(extraStudentAContainer, dayId, 'A', extraA);
             } catch (e) {
-                console.error("Failed to parse extra schedule for Student A:", e);
                 renderExtraScheduleEntries(extraStudentAContainer, dayId, 'A', []);
             }
             
@@ -492,29 +781,43 @@
                 const extraB = JSON.parse(schedule.extra_student_b || '[]');
                 renderExtraScheduleEntries(extraStudentBContainer, dayId, 'B', extraB);
             } catch (e) {
-                console.error("Failed to parse extra schedule for Student B:", e);
                 renderExtraScheduleEntries(extraStudentBContainer, dayId, 'B', []);
+            }
+
+            try {
+                const extraC = JSON.parse(schedule.extra_student_c || '[]');
+                renderExtraScheduleEntries(extraStudentCContainer, dayId, 'C', extraC);
+            } catch (e) {
+                renderExtraScheduleEntries(extraStudentCContainer, dayId, 'C', []);
             }
             
             autoResizeTextareas();
         }
         
         function renderExtraScheduleEntries(container, dayId, studentId, entries) {
-            if (!container) return; // Add null check for container
+            if (!container) return;
             container.innerHTML = '';
+            
+            const emptyState = document.getElementById(`empty-extra-${studentId}-${dayId}`);
+            
+            if (entries.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            } else {
+                if (emptyState) emptyState.classList.add('hidden');
+            }
+
             entries.forEach(entry => {
                 const entryDiv = document.createElement('div');
-                entryDiv.innerHTML = createExtraScheduleEntryHtml(entry);
+                entryDiv.innerHTML = createExtraScheduleEntryHtml(entry, studentId);
                 container.appendChild(entryDiv.firstElementChild);
             });
         }
         
         function collectExtraScheduleData(dayId, studentId) {
-            const container = document.getElementById(`extra-schedule-${studentId}-container-${dayId}`);
-            if (!container) {
-                console.error("Container not found for dayId:", dayId, "and studentId:", studentId);
-                return []; 
-            }
+            const container = document.getElementById(`extra-schedule-${studentId}-${dayId}`);
+            if (!container) return [];
+            
             const entries = [];
             container.querySelectorAll('.extra-schedule-entry').forEach(entryDiv => {
                 const start_time = entryDiv.querySelector('[data-field="start_time"]').value;
@@ -526,27 +829,20 @@
         }
 
         async function saveSchedule(dayId, field, value) {
-            if (!supabase) {
-                showMessage("Lỗi: Không thể kết nối với cơ sở dữ liệu.", 'error');
-                return;
-            }
-            showLoading(true);
+            if (!supabase) return;
+            showLoading(true, 'Đang tự động lưu lịch học...');
             try {
                 const updateObject = {
                     day_id: dayId,
                     [field]: value
                 };
-                const { data, error } = await supabase
+                const { error } = await supabase
                     .from('schedules')
                     .upsert(updateObject, { onConflict: 'day_id' });
 
-                if (error) {
-                    throw error;
-                }
-                
-                showMessage('Lưu thành công!');
+                if (error) throw error;
+                showMessage('Đã tự động lưu thay đổi!');
             } catch (error) {
-                console.error("Lỗi khi lưu dữ liệu:", error);
                 showMessage('Lỗi khi lưu dữ liệu: ' + error.message, 'error');
             } finally {
                 showLoading(false);
@@ -555,8 +851,33 @@
 
         async function saveExtraSchedule(dayId, studentId) {
             const extraScheduleData = collectExtraScheduleData(dayId, studentId);
-            const field = studentId === 'A' ? 'extra_student_a' : 'extra_student_b';
+            const field = studentId === 'A' ? 'extra_student_a' : (studentId === 'B' ? 'extra_student_b' : 'extra_student_c');
             await saveSchedule(dayId, field, JSON.stringify(extraScheduleData));
+        }
+
+        async function saveStudentNames() {
+            if (!supabase) return;
+            const s1Name = student1NameInput.value.trim() || 'Cao Trần Hằng Nga';
+            const s2Name = student2NameInput.value.trim() || 'Cao Trần Thảo Huyền';
+            const s3Name = student3NameInput.value.trim() || 'Cao Vinh Quang';
+
+            showLoading(true, 'Đang cập nhật tên học sinh...');
+            try {
+                const { error } = await supabase.from('settings').upsert({
+                    id: 'student_names',
+                    student1_name: s1Name,
+                    student2_name: s2Name,
+                    student3_name: s3Name
+                }, { onConflict: 'id' });
+
+                if (error) throw error;
+                updateNamesUI({ student1_name: s1Name, student2_name: s2Name, student3_name: s3Name });
+                showMessage('Đã cập nhật tên các con thành công!');
+            } catch (error) {
+                showMessage('Lỗi cập nhật tên: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
         function selectDay(dayName) {
@@ -583,12 +904,20 @@
             }
         }
 
-        toggleAdminBtn.addEventListener('click', () => {
-            isAdminMode = !isAdminMode;
-            if (!isAdminMode) {
+        toggleAdminBtn.addEventListener('click', async () => {
+            if (isAdminMode) {
+                if (student1NameInput.value.trim() !== student1Name || 
+                    student2NameInput.value.trim() !== student2Name || 
+                    student3NameInput.value.trim() !== student3Name) {
+                    await saveStudentNames();
+                }
                 setInitialView();
+            } else {
+                isAdminMode = true;
+                updateDisplay();
+                // Render lại lịch học thêm theo cấu trúc nhập liệu (admin)
+                await fetchInitialData(true);
             }
-            updateDisplay();
             autoResizeTextareas();
         });
 
@@ -608,36 +937,48 @@
             generateScheduleContainers();
             initializeSupabase();
             updateHeaderDate();
-            setInterval(updateHeaderDate, 1000);
+            setInterval(updateHeaderDate, 60000);
 
-            // Add event listeners for new buttons and inputs
+            // Bắt sự kiện bấm thêm lịch hoặc xóa lịch học thêm
             document.addEventListener('click', (e) => {
                 if (e.target.closest('.add-extra-btn')) {
                     const btn = e.target.closest('.add-extra-btn');
-                    if (!isAdminMode) return; // Prevent action if not in admin mode
+                    if (!isAdminMode) return; 
                     const dayId = btn.dataset.dayId;
                     const studentId = btn.dataset.studentId;
-                    const container = document.getElementById(`extra-schedule-${studentId}-container-${dayId}`);
-                    if (!container) return; // Add null check
+                    const container = document.getElementById(`extra-schedule-${studentId}-${dayId}`);
+                    if (!container) return; 
+                    
                     const newEntryDiv = document.createElement('div');
-                    newEntryDiv.innerHTML = createExtraScheduleEntryHtml({});
+                    newEntryDiv.innerHTML = createExtraScheduleEntryHtml({}, studentId);
                     container.appendChild(newEntryDiv.firstElementChild);
+                    
+                    const emptyState = document.getElementById(`empty-extra-${studentId}-${dayId}`);
+                    if (emptyState) emptyState.classList.add('hidden');
+                    
                     saveExtraSchedule(dayId, studentId);
                 } else if (e.target.closest('.delete-extra-btn')) {
                     const btn = e.target.closest('.delete-extra-btn');
-                    if (!isAdminMode) return; // Prevent action if not in admin mode
+                    if (!isAdminMode) return; 
                     const entryDiv = btn.closest('.extra-schedule-entry');
                     const parentContainer = btn.closest('[id^="extra-schedule-"]');
                     if (parentContainer) {
                         const idParts = parentContainer.id.split('-');
-                        const dayId = idParts[idParts.length - 1];
                         const studentId = idParts[2];
+                        const dayId = idParts[3];
                         entryDiv.remove();
+                        
+                        if (parentContainer.querySelectorAll('.extra-schedule-entry').length === 0) {
+                            const emptyState = document.getElementById(`empty-extra-${studentId}-${dayId}`);
+                            if (emptyState) emptyState.classList.remove('hidden');
+                        }
+                        
                         saveExtraSchedule(dayId, studentId);
                     }
                 }
             });
 
+            // Tự động lưu khi bỏ focus chuột khỏi ô nhập liệu (Blur event)
             document.addEventListener('blur', (e) => {
                 const input = e.target.closest('[data-field]');
                 const textarea = e.target;
@@ -646,32 +987,19 @@
                     const parentContainer = input.closest('[id^="extra-schedule-"]');
                     if (parentContainer) {
                         const idParts = parentContainer.id.split('-');
-                        const dayId = idParts[idParts.length - 1];
                         const studentId = idParts[2];
+                        const dayId = idParts[3];
                         saveExtraSchedule(dayId, studentId);
                     }
-                } else if (textarea.id.startsWith('schedule-') && !textarea.readOnly) {
+                } else if (textarea.id && textarea.id.startsWith('schedule-') && !textarea.readOnly) {
                     const idParts = textarea.id.split('-');
-                    const dayId = idParts[2];
                     const studentId = idParts[1];
+                    const dayId = idParts[2];
                     const field = `student_${studentId.toLowerCase()}`;
                     saveSchedule(dayId, field, textarea.value);
-                }
-            }, true);
-
-            document.addEventListener('focus', (e) => {
-                if (e.target.tagName === 'INPUT' || (e.target.tagName === 'TEXTAREA' && !e.target.readOnly)) {
-                    e.target.classList.add('editable-textarea');
-                }
-            }, true);
-
-            document.addEventListener('blur', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                    e.target.classList.remove('editable-textarea');
                 }
             }, true);
         });
     </script>
 </body>
 </html>
-
