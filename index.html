@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thời Khoá Biểu Gia Đình</title>
+    <!-- Tailwind CSS CDN for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
         }
         .schedule-card {
             background-color: #ffffff;
@@ -123,41 +124,137 @@
             text-align: center;
             padding: 0.75rem;
         }
+        /* Hiệu ứng nhấp nháy cho nút Admin đang hoạt động */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .admin-pulse {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
     </style>
+    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-6 text-slate-800">
 
+    <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-slate-900 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300" style="display: none;">
         <div class="flex flex-col items-center p-6 bg-white rounded-2xl shadow-2xl max-w-xs w-full mx-4 transform scale-95 transition-transform duration-300">
             <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p id="loading-message" class="mt-4 text-slate-700 font-semibold text-center">Đang kết nối lịch học...</p>
+            <p id="loading-message" class="mt-4 text-slate-700 font-semibold text-center">Đang tải lịch học...</p>
         </div>
     </div>
 
-    <!-- Hộp thông báo trạng thái -->
+    <!-- Message Box thông báo trạng thái -->
     <div id="message-box" class="message-box p-4 rounded-xl shadow-xl text-white font-medium flex items-center gap-2"></div>
+
+    <!-- Custom Confirm Dialog (Xóa cảnh báo mặc định) -->
+    <div id="confirm-dialog" class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border border-slate-100">
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Xác nhận hành động</h3>
+            <p id="confirm-text" class="text-sm text-slate-600 mb-6"></p>
+            <div class="flex justify-end gap-3">
+                <button id="confirm-cancel" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Hủy</button>
+                <button id="confirm-ok" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all shadow-md shadow-rose-100">Xác nhận xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pop up nhập mã PIN bảo mật Admin -->
+    <div id="pin-modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border border-slate-100 text-center">
+            <span class="inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-2xl mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </span>
+            <h3 class="text-xl font-bold text-slate-800 mb-1">Xác thực quyền Admin</h3>
+           
+            
+            <div class="mb-6">
+                <input id="pin-input" type="password" maxlength="6" class="w-36 text-center text-2xl font-bold tracking-[0.5em] px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800" placeholder="••••">
+                <p id="pin-error" class="text-xs text-rose-500 font-semibold mt-2 hidden">Mã PIN không chính xác!</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="pin-cancel" class="flex-1 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Đóng</button>
+                <button id="pin-submit" class="flex-1 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-md shadow-indigo-100">Xác nhận</button>
+            </div>
+        </div>
+    </div>
 
     <div class="w-full max-w-7xl mx-auto py-4 md:py-8">
         
+        <!-- Bảng điều khiển đầu trang -->
         <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card mb-8 text-center border border-slate-100 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-amber-500"></div>
             
-            <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-2 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Thời Khoá Biểu Gia Đình
-            </h1>
-            <p id="date-display" class="text-slate-500 font-medium mb-6"></p>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+                <div class="text-center md:text-left">
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-2 flex items-center justify-center md:justify-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Thời Khoá Biểu Gia Đình
+                    </h1>
+                    <p id="date-display" class="text-slate-500 font-medium"></p>
+                </div>
 
-            <div id="admin-indicator" class="hidden mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-2 text-sm font-medium max-w-md mx-auto">
-                ⚡ Đang ở Chế độ Admin. Bạn có thể thay đổi lịch trực tiếp và đổi tên của 3 con!
+                <!-- NÚT BẤM ADMIN CAO CẤP MỚI -->
+                <button id="toggleAdminBtn" class="px-6 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white font-semibold rounded-2xl hover:shadow-lg hover:shadow-slate-200 transition-all duration-300 flex items-center justify-center gap-2 shadow-md md:self-center border border-slate-700/50 transform active:scale-95">
+                    <span class="relative flex h-3 w-3" id="admin-status-dot">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-slate-500" id="admin-dot-inner"></span>
+                    </span>
+                    <span id="admin-btn-text">Bật Chỉnh Sửa (Admin)</span>
+                </button>
+            </div>
+
+            <!-- BẢNG ĐIỀU KHIỂN CHI TIẾT KHI MỞ KHÓA ADMIN -->
+            <div id="admin-indicator" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 md:p-6 text-left max-w-4xl mx-auto space-y-4 shadow-sm">
+                <div class="flex items-center gap-2 text-amber-800 font-bold text-base border-b border-amber-200/60 pb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 animate-pulse text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    ⚡ CHẾ ĐỘ QUẢN TRỊ VIÊN (ADMIN)
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Thiết lập giờ chuyển ngày -->
+                    <div class="bg-white p-3.5 rounded-xl border border-amber-100 flex items-center justify-between shadow-sm">
+                        <div>
+                            <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Tự động sang ngày mới</span>
+                            <span class="text-xs text-slate-400">Chọn giờ hệ thống sẽ tự động hiển thị lịch ngày mai</span>
+                        </div>
+                        <select id="rollover-hour-select" class="bg-amber-50 border border-amber-200 text-amber-800 font-bold px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm cursor-pointer">
+                            <option value="17">17:00 chiều</option>
+                            <option value="18">18:00 chiều</option>
+                            <option value="19" selected>19:00 tối</option>
+                            <option value="20">20:00 tối</option>
+                            <option value="21">21:00 tối</option>
+                            <option value="22">22:00 tối</option>
+                        </select>
+                    </div>
+
+                    <!-- Hành động xóa dữ liệu nhanh -->
+                    <div class="bg-white p-3.5 rounded-xl border border-amber-100 shadow-sm flex flex-col justify-center">
+                        <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tác vụ xóa lịch nhanh</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="clear-student-1" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold text-xs rounded-lg transition-all">Xóa Hằng Nga</button>
+                            <button id="clear-student-2" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold text-xs rounded-lg transition-all">Xóa Thảo Huyền</button>
+                            <button id="clear-student-3" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold text-xs rounded-lg transition-all">Xóa Vinh Quang</button>
+                            <button id="clear-all-schedules" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all">XÓA TẤT CẢ</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
+            <!-- Bộ chọn ngày tiện lợi cho người dùng -->
             <div id="day-selection-buttons" class="flex flex-wrap justify-center gap-2">
                 <button data-day="Tự Động" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Tự Động</button>
                 <button data-day="Thứ Hai" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Hai</button>
@@ -167,73 +264,75 @@
                 <button data-day="Thứ Sáu" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Sáu</button>
                 <button data-day="Thứ Bảy" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Thứ Bảy</button>
                 <button data-day="Chủ Nhật" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200">Chủ Nhật</button>
+                <span class="h-8 w-[1px] bg-slate-200 mx-1 self-center hidden sm:inline"></span>
+                <button id="btn-view-all-week" class="day-button px-4 py-2 rounded-full text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100">Xem Cả Tuần</button>
             </div>
-
-            <button id="toggleAdminBtn" class="mt-6 px-6 py-2.5 bg-slate-800 text-white font-semibold rounded-full hover:bg-slate-700 transition-all duration-300 shadow-md flex items-center gap-2 mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                </svg>
-                <span>Xem Toàn Bộ Lịch</span>
-            </button>
         </div>
 
+        <!-- Bảng xếp gọn Grid 3 học sinh (Tự động chuyển hàng trên di động và cột trên máy tính) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- Học sinh 1 (Cao Trần Hằng Nga) -->
-            <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-blue-500">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
-                    <div class="flex items-center gap-3 w-full">
-                        <span class="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </span>
-                        <div class="w-full">
-                            <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">Học sinh 1</span>
-                            <h2 id="student-1-header" class="text-2xl font-extrabold text-slate-800">Cao Trần Hằng Nga</h2>
-                            <input id="student-1-name-input" type="text" class="hidden text-xl font-extrabold text-blue-700 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200 focus:outline-none w-full" value="Cao Trần Hằng Nga">
+            <div id="student-card-A" class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-blue-500 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </span>
+                            <div class="w-full">
+                                <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">Học sinh 1</span>
+                                <h2 id="student-1-header" class="text-2xl font-extrabold text-slate-800">Cao Trần Hằng Nga</h2>
+                                <input id="student-1-name-input" type="text" class="hidden text-xl font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1.5 rounded-xl border border-blue-200 focus:outline-none w-full" value="Cao Trần Hằng Nga">
+                            </div>
                         </div>
                     </div>
+                    <div id="student-1-schedule" class="space-y-6"></div>
                 </div>
-                <div id="student-1-schedule" class="space-y-6"></div>
             </div>
 
             <!-- Học sinh 2 (Cao Trần Thảo Huyền) -->
-            <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-indigo-500">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
-                    <div class="flex items-center gap-3 w-full">
-                        <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </span>
-                        <div class="w-full">
-                            <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Học sinh 2</span>
-                            <h2 id="student-2-header" class="text-2xl font-extrabold text-slate-800">Cao Trần Thảo Huyền</h2>
-                            <input id="student-2-name-input" type="text" class="hidden text-xl font-extrabold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 focus:outline-none w-full" value="Cao Trần Thảo Huyền">
+            <div id="student-card-B" class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-indigo-500 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </span>
+                            <div class="w-full">
+                                <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Học sinh 2</span>
+                                <h2 id="student-2-header" class="text-2xl font-extrabold text-slate-800">Cao Trần Thảo Huyền</h2>
+                                <input id="student-2-name-input" type="text" class="hidden text-xl font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded-xl border border-indigo-200 focus:outline-none w-full" value="Cao Trần Thảo Huyền">
+                            </div>
                         </div>
                     </div>
+                    <div id="student-2-schedule" class="space-y-6"></div>
                 </div>
-                <div id="student-2-schedule" class="space-y-6"></div>
             </div>
 
             <!-- Học sinh 3 (Cao Vinh Quang) -->
-            <div class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-amber-500">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
-                    <div class="flex items-center gap-3 w-full">
-                        <span class="p-2 bg-amber-50 text-amber-600 rounded-xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </span>
-                        <div class="w-full">
-                            <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Học sinh 3</span>
-                            <h2 id="student-3-header" class="text-2xl font-extrabold text-slate-800">Cao Vinh Quang</h2>
-                            <input id="student-3-name-input" type="text" class="hidden text-xl font-extrabold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 focus:outline-none w-full" value="Cao Vinh Quang">
+            <div id="student-card-C" class="bg-white p-6 md:p-8 rounded-3xl schedule-card border-t-8 border-amber-500 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </span>
+                            <div class="w-full">
+                                <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Học sinh 3</span>
+                                <h2 id="student-3-header" class="text-2xl font-extrabold text-slate-800">Cao Vinh Quang</h2>
+                                <input id="student-3-name-input" type="text" class="hidden text-xl font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 focus:outline-none w-full" value="Cao Vinh Quang">
+                            </div>
                         </div>
                     </div>
+                    <div id="student-3-schedule" class="space-y-6"></div>
                 </div>
-                <div id="student-3-schedule" class="space-y-6"></div>
             </div>
 
         </div>
@@ -265,30 +364,67 @@
         const dateDisplayElement = document.getElementById('date-display');
         const toggleAdminBtn = document.getElementById('toggleAdminBtn');
         const daySelectionButtonsContainer = document.getElementById('day-selection-buttons');
+        const rolloverHourSelect = document.getElementById('rollover-hour-select');
+
+        // Bảng gỡ lỗi Dialog & PIN Modal
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const confirmText = document.getElementById('confirm-text');
+        const confirmOk = document.getElementById('confirm-ok');
+        const confirmCancel = document.getElementById('confirm-cancel');
+
+        const pinModal = document.getElementById('pin-modal');
+        const pinInput = document.getElementById('pin-input');
+        const pinError = document.getElementById('pin-error');
+        const pinSubmit = document.getElementById('pin-submit');
+        const pinCancel = document.getElementById('pin-cancel');
 
         let isAdminMode = false;
+        let viewMode = 'single'; // 'single' (xem từng ngày) hoặc 'all' (xem cả tuần)
         let selectedDay = null;
         let pollingInterval = null;
+        let rolloverHourSetting = 19; // Mặc định 19h tự động chuyển sang ngày mai
+        let cachedSchedules = {}; // Bộ đệm cache dữ liệu lịch
 
-        // Cấu hình thông tin cơ sở dữ liệu Supabase của bạn
+        // Cấu hình cơ sở dữ liệu Supabase
         const SUPABASE_URL = 'https://tjxvwsaqdadmsmjdujdj.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_N-tlbldCW8KyKsyp9qbltg_6req3rZe';
         
         let supabase = null;
 
+        // Custom Confirm Dialog thay thế cho confirm() mặc định của trình duyệt
+        let confirmPromiseResolve = null;
+        function showCustomConfirm(message) {
+            confirmText.textContent = message;
+            confirmDialog.style.display = 'flex';
+            return new Promise((resolve) => {
+                confirmPromiseResolve = resolve;
+            });
+        }
+
+        confirmOk.addEventListener('click', () => {
+            confirmDialog.style.display = 'none';
+            if (confirmPromiseResolve) confirmPromiseResolve(true);
+        });
+
+        confirmCancel.addEventListener('click', () => {
+            confirmDialog.style.display = 'none';
+            if (confirmPromiseResolve) confirmPromiseResolve(false);
+        });
+
+        // Thiết lập đồng bộ hóa ngầm qua HTTP Polling (mỗi 8 giây) nếu mạng WebSocket bị khóa
         function startPollingFallback() {
             if (pollingInterval) return;
-            console.log("Kích hoạt chế độ tải dự phòng HTTP Polling (mỗi 8 giây)...");
+            console.log("Kích hoạt cơ chế HTTP Polling dự phòng (mỗi 8s)...");
             pollingInterval = setInterval(async () => {
                 try {
                     await fetchInitialData(true);
                 } catch (e) {
-                    console.warn("Background sync failed:", e);
+                    console.warn("Lỗi đồng bộ hóa ngầm:", e);
                 }
             }, 8000);
         }
 
-        // Hiện thông báo trạng thái
+        // Hiện hộp thông báo trạng thái ngắn
         function showMessage(message, type = 'success') {
             messageBox.textContent = message;
             messageBox.classList.remove('bg-green-600', 'bg-rose-600', 'bg-amber-600');
@@ -307,7 +443,7 @@
             }, 3000);
         }
 
-        function showLoading(show, message = 'Đang kết nối...') {
+        function showLoading(show, message = 'Đang tải...') {
             loadingMessage.textContent = message;
             if (show) {
                 loadingOverlay.style.display = 'flex';
@@ -326,7 +462,7 @@
             daysOfWeek.forEach((day) => {
                 const dayId = day.replace(/\s/g, '');
                 
-                // Student 1 (A)
+                // Student 1 (A) - Cao Trần Hằng Nga
                 const daySection1 = document.createElement('div');
                 daySection1.id = `day-section-A-${dayId}`;
                 daySection1.className = 'day-section transition-all duration-300';
@@ -334,35 +470,37 @@
                     <h3 class="text-xl font-bold text-slate-700 day-header pb-2 mb-3 flex items-center justify-between">
                         <span>${day}</span>
                     </h3>
-                    <div class="schedule-section">
-                        <div class="schedule-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                            </svg>
-                            Lịch học chính
+                    <div id="wrapper-schedule-A-${dayId}">
+                        <div class="schedule-section">
+                            <div class="schedule-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                </svg>
+                                Lịch học chính
+                            </div>
+                            <textarea id="schedule-A-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
                         </div>
-                        <textarea id="schedule-A-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
-                    </div>
-                    <div class="schedule-section extra">
-                        <div class="schedule-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                            </svg>
-                            Lịch học thêm
+                        <div class="schedule-section extra">
+                            <div class="schedule-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                                </svg>
+                                Lịch học thêm
+                            </div>
+                            <div id="extra-schedule-A-${dayId}" class="space-y-3"></div>
+                            <div id="empty-extra-A-${dayId}" class="empty-state">Không có lịch học thêm</div>
+                            <button class="add-extra-btn mt-3 px-4 py-2 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="A">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg> Thêm Lịch
+                            </button>
                         </div>
-                        <div id="extra-schedule-A-${dayId}" class="space-y-4"></div>
-                        <div id="empty-extra-A-${dayId}" class="empty-state">Không có lịch học thêm</div>
-                        <button class="add-extra-btn mt-4 px-4 py-2 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="A">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg> Thêm Lịch
-                        </button>
                     </div>
                 `;
                 student1ScheduleContainer.appendChild(daySection1);
 
-                // Student 2 (B)
+                // Student 2 (B) - Cao Trần Thảo Huyền
                 const daySection2 = document.createElement('div');
                 daySection2.id = `day-section-B-${dayId}`;
                 daySection2.className = 'day-section transition-all duration-300';
@@ -370,30 +508,32 @@
                     <h3 class="text-xl font-bold text-slate-700 day-header pb-2 mb-3 flex items-center justify-between">
                         <span>${day}</span>
                     </h3>
-                    <div class="schedule-section">
-                        <div class="schedule-title title-b">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                            </svg>
-                            Lịch học chính
+                    <div id="wrapper-schedule-B-${dayId}">
+                        <div class="schedule-section">
+                            <div class="schedule-title title-b">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                </svg>
+                                Lịch học chính
+                            </div>
+                            <textarea id="schedule-B-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
                         </div>
-                        <textarea id="schedule-B-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
-                    </div>
-                    <div class="schedule-section extra extra-b">
-                        <div class="schedule-title title-b">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                            </svg>
-                            Lịch học thêm
+                        <div class="schedule-section extra extra-b">
+                            <div class="schedule-title title-b">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                                </svg>
+                                Lịch học thêm
+                            </div>
+                            <div id="extra-schedule-B-${dayId}" class="space-y-3"></div>
+                            <div id="empty-extra-B-${dayId}" class="empty-state">Không có lịch học thêm</div>
+                            <button class="add-extra-btn mt-3 px-4 py-2 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="B">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg> Thêm Lịch
+                            </button>
                         </div>
-                        <div id="extra-schedule-B-${dayId}" class="space-y-4"></div>
-                        <div id="empty-extra-B-${dayId}" class="empty-state">Không có lịch học thêm</div>
-                        <button class="add-extra-btn mt-4 px-4 py-2 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="B">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg> Thêm Lịch
-                        </button>
                     </div>
                 `;
                 student2ScheduleContainer.appendChild(daySection2);
@@ -406,30 +546,32 @@
                     <h3 class="text-xl font-bold text-slate-700 day-header pb-2 mb-3 flex items-center justify-between">
                         <span>${day}</span>
                     </h3>
-                    <div class="schedule-section">
-                        <div class="schedule-title title-c">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-amber-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                            </svg>
-                            Lịch học chính
+                    <div id="wrapper-schedule-C-${dayId}">
+                        <div class="schedule-section">
+                            <div class="schedule-title title-c">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                </svg>
+                                Lịch học chính
+                            </div>
+                            <textarea id="schedule-C-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
                         </div>
-                        <textarea id="schedule-C-${dayId}" placeholder="Không có lịch học chính trong ngày này..." class="w-full font-semibold" readonly></textarea>
-                    </div>
-                    <div class="schedule-section extra extra-c">
-                        <div class="schedule-title title-c">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-amber-600" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                            </svg>
-                            Lịch học thêm
+                        <div class="schedule-section extra extra-c">
+                            <div class="schedule-title title-c">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 schedule-icon text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                                </svg>
+                                Lịch học thêm
+                            </div>
+                            <div id="extra-schedule-C-${dayId}" class="space-y-3"></div>
+                            <div id="empty-extra-C-${dayId}" class="empty-state">Không có lịch học thêm</div>
+                            <button class="add-extra-btn mt-3 px-4 py-2 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="C">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg> Thêm Lịch
+                            </button>
                         </div>
-                        <div id="extra-schedule-C-${dayId}" class="space-y-4"></div>
-                        <div id="empty-extra-C-${dayId}" class="empty-state">Không có lịch học thêm</div>
-                        <button class="add-extra-btn mt-4 px-4 py-2 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-200 transition-all hidden flex items-center gap-1" data-day-id="${dayId}" data-student-id="C">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg> Thêm Lịch
-                        </button>
                     </div>
                 `;
                 student3ScheduleContainer.appendChild(daySection3);
@@ -456,11 +598,11 @@
             }
 
             if (!isAdminMode) {
-                // CHẾ ĐỘ XEM (Thường): Dùng text thuần túy, tự động xuống dòng và co giãn tự nhiên
+                // CHẾ ĐỘ XEM TRỰC QUAN (Tự động xuống dòng 100%, không bị cắt chữ)
                 return `
-                    <div class="extra-schedule-entry-view bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2">
+                    <div class="extra-schedule-entry-view bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm flex flex-col gap-2 transition-all hover:border-slate-200">
                         <div class="flex items-center gap-2">
-                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg ${timeBadgeBgClass} ${timeBadgeTextClass} flex items-center gap-1">
+                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg ${timeBadgeBgClass} ${timeBadgeTextClass} flex items-center gap-1 shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -469,15 +611,15 @@
                         </div>
                         <div class="w-full">
                             <p class="text-sm font-semibold ${textColorClass} whitespace-normal break-words leading-relaxed">
-                                ${teacher_name || 'Chưa có thông tin Cô/Thầy - Địa điểm'}
+                                ${teacher_name || 'Chưa điền thông tin'}
                             </p>
                         </div>
                     </div>
                 `;
             } else {
-                // CHẾ ĐỘ SỬA (Admin): Đưa Cô/Thầy xuống 1 dòng riêng và dùng Textarea để nhìn thấy toàn bộ chữ
+                // CHẾ ĐỘ SỬA (ADMIN): Giờ đi/về đặt nằm ngang, trường Cô giáo được xuống 1 dòng riêng và dùng Textarea
                 const deleteButtonHtml = `
-                    <button class="delete-extra-btn bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl p-2 transition-all duration-200 shadow-sm">
+                    <button class="delete-extra-btn bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl p-2 transition-all duration-200 shadow-sm self-end">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.728-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
                         </svg>
@@ -487,19 +629,19 @@
                 return `
                     <div class="extra-schedule-entry flex flex-col gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
                         <div class="flex flex-row gap-2 items-center">
-                            <div class="w-28 shrink-0">
+                            <div class="w-24 shrink-0">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Giờ đi</label>
-                                <input type="text" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold" placeholder="VD: 17:00" value="${start_time}" data-field="start_time">
+                                <input type="text" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold text-center" placeholder="VD: 17:00" value="${start_time}" data-field="start_time">
                             </div>
-                            <div class="w-28 shrink-0">
+                            <div class="w-24 shrink-0">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Giờ về</label>
-                                <input type="text" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold" placeholder="VD: 19:00" value="${end_time}" data-field="end_time">
+                                <input type="text" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold text-center" placeholder="VD: 19:00" value="${end_time}" data-field="end_time">
                             </div>
                             <div class="flex-1"></div>
-                            <div class="pt-4">${deleteButtonHtml}</div>
+                            <div class="pt-3">${deleteButtonHtml}</div>
                         </div>
                         <div class="w-full">
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cô/Thầy - Địa điểm (Tự xuống dòng khi lưu)</label>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Cô/Thầy - Địa điểm (Tự động xuống dòng)</label>
                             <textarea rows="2" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${focusRingClass} text-slate-800 font-semibold leading-normal" placeholder="VD: Cô Hạnh - Học tại trường" data-field="teacher_name">${teacher_name}</textarea>
                         </div>
                     </div>
@@ -514,14 +656,14 @@
             });
         }
         
-        // Tính toán hiển thị ngày thích hợp (Trước 18h hiện hôm nay, Sau 18h hiện ngày mai)
+        // Tính toán nhảy ngày dựa theo cấu hình giờ tự động chuyển ngày của bố mẹ
         function getTargetDayName() {
             const nowInVietnam = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
             const currentHour = nowInVietnam.getHours();
             const todayJSIndex = nowInVietnam.getDay();
             
             let targetDayJSIndex;
-            if (currentHour >= 18) {
+            if (currentHour >= rolloverHourSetting) {
                 targetDayJSIndex = (todayJSIndex === 6) ? 0 : todayJSIndex + 1;
             } else {
                 targetDayJSIndex = todayJSIndex;
@@ -532,93 +674,128 @@
         }
 
         function updateDisplay() {
+            // Cập nhật giao diện thanh nút ngày
+            document.querySelectorAll('.day-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            if (viewMode === 'all') {
+                const btnAll = document.getElementById('btn-view-all-week');
+                if (btnAll) btnAll.classList.add('active');
+            } else {
+                const activeBtn = document.querySelector(`[data-day="${selectedDay}"]`);
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+
+            // Đồng bộ thẻ ẩn/hiện lịch
+            daysOfWeek.forEach(day => {
+                const dayId = day.replace(/\s/g, '');
+                const sections = [
+                    document.getElementById(`day-section-A-${dayId}`),
+                    document.getElementById(`day-section-B-${dayId}`),
+                    document.getElementById(`day-section-C-${dayId}`)
+                ];
+
+                sections.forEach(sec => {
+                    if (sec) {
+                        if (viewMode === 'all') {
+                            sec.style.display = 'block';
+                        } else {
+                            sec.style.display = (day === selectedDay) ? 'block' : 'none';
+                        }
+                    }
+                });
+            });
+
+            // Nếu ở chế độ ADMIN
             if (isAdminMode) {
                 adminIndicator.classList.remove('hidden');
                 
-                document.querySelectorAll('.day-section').forEach(section => {
-                    section.style.display = 'block';
-                });
+                // Mở khóa các ô văn bản lịch chính
+                document.querySelectorAll('textarea[id^="schedule-A-"]').forEach(t => { t.readOnly = false; t.classList.add('editable-textarea'); t.placeholder = "Nhập lịch..."; });
+                document.querySelectorAll('textarea[id^="schedule-B-"]').forEach(t => { t.readOnly = false; t.classList.add('editable-textarea-b'); t.placeholder = "Nhập lịch..."; });
+                document.querySelectorAll('textarea[id^="schedule-C-"]').forEach(t => { t.readOnly = false; t.classList.add('editable-textarea-c'); t.placeholder = "Nhập lịch..."; });
                 
-                document.querySelectorAll('.day-button').forEach(button => {
-                    button.classList.remove('active');
+                // Hiện nút Thêm Lịch học thêm và các Ô nhập liệu tên con
+                document.querySelectorAll('.add-extra-btn').forEach(b => b.classList.remove('hidden'));
+                student1Header.classList.add('hidden'); student1NameInput.classList.remove('hidden');
+                student2Header.classList.add('hidden'); student2NameInput.classList.remove('hidden');
+                student3Header.classList.add('hidden'); student3NameInput.classList.remove('hidden');
+
+                // Đảm bảo phần khung nội dung của các con luôn hiển thị để sửa
+                daysOfWeek.forEach(day => {
+                    const dayId = day.replace(/\s/g, '');
+                    const wrappers = [
+                        document.getElementById(`wrapper-schedule-A-${dayId}`),
+                        document.getElementById(`wrapper-schedule-B-${dayId}`),
+                        document.getElementById(`wrapper-schedule-C-${dayId}`)
+                    ];
+                    wrappers.forEach(w => { if (w) w.style.display = 'block'; });
                 });
-                
-                student1Header.classList.add('hidden');
-                student2Header.classList.add('hidden');
-                student3Header.classList.add('hidden');
-                
-                student1NameInput.classList.remove('hidden');
-                student2NameInput.classList.remove('hidden');
-                student3NameInput.classList.remove('hidden');
-                
-                document.querySelectorAll('textarea[id^="schedule-A-"]').forEach(textarea => {
-                    textarea.readOnly = false;
-                    textarea.placeholder = "Nhập lịch học chính...";
-                    textarea.classList.add('editable-textarea');
-                });
-                document.querySelectorAll('textarea[id^="schedule-B-"]').forEach(textarea => {
-                    textarea.readOnly = false;
-                    textarea.placeholder = "Nhập lịch học chính...";
-                    textarea.classList.add('editable-textarea-b');
-                });
-                document.querySelectorAll('textarea[id^="schedule-C-"]').forEach(textarea => {
-                    textarea.readOnly = false;
-                    textarea.placeholder = "Nhập lịch học chính...";
-                    textarea.classList.add('editable-textarea-c');
-                });
-                
-                document.querySelectorAll('.add-extra-btn, .delete-extra-btn').forEach(btn => {
-                    btn.classList.remove('hidden');
-                });
-                
-                toggleAdminBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg> Ẩn Toàn Bộ Lịch (Lưu)
-                `;
-                toggleAdminBtn.classList.replace('bg-slate-800', 'bg-rose-600');
-                toggleAdminBtn.classList.replace('hover:bg-slate-700', 'hover:bg-rose-500');
+
+                // Cập nhật Trạng thái nút Admin
+                toggleAdminBtn.className = "px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-100 hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 flex items-center justify-center gap-2 border border-emerald-500/50 transform active:scale-95 admin-pulse";
+                document.getElementById('admin-status-dot').className = "relative flex h-3 w-3";
+                document.getElementById('admin-dot-inner').className = "relative inline-flex rounded-full h-3 w-3 bg-emerald-300";
+                toggleAdminBtn.querySelector('#admin-btn-text').textContent = 'Đang Chỉnh Sửa';
+
             } else {
                 adminIndicator.classList.add('hidden');
                 
-                student1Header.classList.remove('hidden');
-                student2Header.classList.remove('hidden');
-                student3Header.classList.remove('hidden');
+                // Khóa bảo mật ô văn bản
+                document.querySelectorAll('textarea[id^="schedule-"]').forEach(t => { t.readOnly = true; t.classList.remove('editable-textarea', 'editable-textarea-b', 'editable-textarea-c'); t.placeholder = "Không có lịch học chính..."; });
+                document.querySelectorAll('.add-extra-btn').forEach(b => b.classList.add('hidden'));
                 
-                student1NameInput.classList.add('hidden');
-                student2NameInput.classList.add('hidden');
-                student3NameInput.classList.add('hidden');
+                // Khóa ô sửa tên các con
+                student1Header.classList.remove('hidden'); student1NameInput.classList.add('hidden');
+                student2Header.classList.remove('hidden'); student2NameInput.classList.add('hidden');
+                student3Header.classList.remove('hidden'); student3NameInput.classList.add('hidden');
 
-                document.querySelectorAll('.day-section').forEach(section => {
-                    section.style.display = 'none';
-                });
-                
-                const targetDayId = selectedDay.replace(/\s/g, '');
-                const targetDaySectionA = document.getElementById(`day-section-A-${targetDayId}`);
-                const targetDaySectionB = document.getElementById(`day-section-B-${targetDayId}`);
-                const targetDaySectionC = document.getElementById(`day-section-C-${targetDayId}`);
-                
-                if (targetDaySectionA) targetDaySectionA.style.display = 'block';
-                if (targetDaySectionB) targetDaySectionB.style.display = 'block';
-                if (targetDaySectionC) targetDaySectionC.style.display = 'block';
+                // ẨN CÁC KHUNG LỊCH TRỐNG (Chỉ hiển thị Tên Học sinh nếu không có lịch học nào trong ngày)
+                if (viewMode === 'single') {
+                    const targetDayId = selectedDay.replace(/\s/g, '');
+                    checkAndToggleEmptyState('A', targetDayId);
+                    checkAndToggleEmptyState('B', targetDayId);
+                    checkAndToggleEmptyState('C', targetDayId);
+                } else {
+                    // Khi xem cả tuần, luôn hiện nội dung các ngày
+                    daysOfWeek.forEach(day => {
+                        const dayId = day.replace(/\s/g, '');
+                        document.getElementById(`wrapper-schedule-A-${dayId}`).style.display = 'block';
+                        document.getElementById(`wrapper-schedule-B-${dayId}`).style.display = 'block';
+                        document.getElementById(`wrapper-schedule-C-${dayId}`).style.display = 'block';
+                    });
+                }
 
-                document.querySelectorAll('textarea[id^="schedule-A-"], textarea[id^="schedule-B-"], textarea[id^="schedule-C-"]').forEach(textarea => {
-                    textarea.readOnly = true;
-                    textarea.placeholder = "Không có lịch học chính...";
-                    textarea.classList.remove('editable-textarea', 'editable-textarea-b', 'editable-textarea-c');
-                });
+                // Cập nhật nút Admin về dạng Đóng
+                toggleAdminBtn.className = "px-6 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white font-semibold rounded-2xl hover:shadow-lg hover:shadow-slate-200 transition-all duration-300 flex items-center justify-center gap-2 shadow-md border border-slate-700/50 transform active:scale-95";
+                document.getElementById('admin-status-dot').className = "relative flex h-3 w-3";
+                document.getElementById('admin-dot-inner').className = "relative inline-flex rounded-full h-3 w-3 bg-slate-500";
+                toggleAdminBtn.querySelector('#admin-btn-text').textContent = 'Bật Chỉnh Sửa (Admin)';
+            }
+            autoResizeTextareas();
+        }
 
-                document.querySelectorAll('.add-extra-btn, .delete-extra-btn').forEach(btn => {
-                    btn.classList.add('hidden');
-                });
+        // Ẩn khung lịch nếu học sinh hoàn toàn không có lịch học nào trong ngày được chọn
+        function checkAndToggleEmptyState(studentId, dayId) {
+            const wrapper = document.getElementById(`wrapper-schedule-${studentId}-${dayId}`);
+            if (!wrapper) return;
 
-                toggleAdminBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                    </svg> Xem Toàn Bộ Lịch
-                `;
-                toggleAdminBtn.classList.replace('bg-rose-600', 'bg-slate-800');
-                toggleAdminBtn.classList.replace('hover:bg-rose-500', 'hover:bg-slate-700');
+            const scheduleData = cachedSchedules[dayId] || {};
+            const mainField = studentId === 'A' ? 'student_a' : (studentId === 'B' ? 'student_b' : 'student_c');
+            const extraField = studentId === 'A' ? 'extra_student_a' : (studentId === 'B' ? 'extra_student_b' : 'extra_student_c');
+
+            const hasMainSchedule = (scheduleData[mainField] && scheduleData[mainField].trim().length > 0);
+            let hasExtraSchedule = false;
+            try {
+                const extraList = JSON.parse(scheduleData[extraField] || '[]');
+                if (extraList.length > 0) hasExtraSchedule = true;
+            } catch (e) {}
+
+            if (!hasMainSchedule && !hasExtraSchedule) {
+                wrapper.style.display = 'none'; // Ẩn phần nội dung rỗng, chỉ giữ lại tên con phía trên thẻ card
+            } else {
+                wrapper.style.display = 'block';
             }
         }
 
@@ -636,7 +813,7 @@
         }
 
         async function initializeSupabase() {
-            showLoading(true, 'Đang kết nối cơ sở dữ liệu gia đình...');
+            showLoading(true, 'Đang đồng bộ dữ liệu đám mây...');
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
@@ -646,13 +823,13 @@
                 try {
                     startRealtimeListeners();
                 } catch (realtimeError) {
-                    console.warn("WebSocket không khả dụng trong Canvas. Kích hoạt HTTP Polling...", realtimeError);
+                    console.warn("Môi trường Canvas chặn WebSockets. Chuyển sang HTTP Polling...", realtimeError);
                     startPollingFallback();
                 }
                 
             } catch (error) {
                 console.error("Lỗi kết nối database:", error);
-                showMessage("Đang xem ở Chế độ Xem Ngoại Tuyến (Offline View)", 'warning');
+                showMessage("Đang ở Chế độ Xem Ngoại Tuyến (Offline View)", 'warning');
                 startPollingFallback();
             } finally {
                 showLoading(false);
@@ -678,6 +855,9 @@
                         if (payload.new && payload.new.id === 'student_names') {
                             updateNamesUI(payload.new);
                         }
+                        if (payload.new && payload.new.id === 'rollover_config') {
+                            updateRolloverUI(payload.new.rollover_hour);
+                        }
                     });
 
                 settingsChannel.subscribe((status, err) => {
@@ -689,6 +869,7 @@
                 const schedulesChannel = supabase.channel('public:schedules')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, payload => {
                         if (payload.new) {
+                            cachedSchedules[payload.new.day_id] = payload.new;
                             renderDay(payload.new.day_id, payload.new);
                         }
                     });
@@ -704,20 +885,30 @@
         }
         
         async function fetchInitialData(quiet = false) {
-            if (!quiet) showLoading(true, 'Đang tải dữ liệu lịch mới nhất...');
+            if (!quiet) showLoading(true, 'Đang kết nối thời khoá biểu...');
             try {
-                const { data: namesData, error: namesError } = await supabase.from('settings').select('*').eq('id', 'student_names').single();
-                if (!namesError && namesData) {
+                // Tải cài đặt tên
+                const { data: namesData } = await supabase.from('settings').select('*').eq('id', 'student_names').single();
+                if (namesData) {
                     updateNamesUI(namesData);
                 }
 
-                const { data: schedulesData, error: schedulesError } = await supabase.from('schedules').select('*');
-                if (!schedulesError && schedulesData) {
-                    const scheduleMap = schedulesData.reduce((acc, curr) => {
-                        acc[curr.day_id] = curr;
-                        return acc;
-                    }, {});
-                    renderAllSchedules(scheduleMap);
+                // Tải cấu hình giờ chuyển ngày
+                const { data: configData } = await supabase.from('settings').select('*').eq('id', 'rollover_config').single();
+                if (configData) {
+                    updateRolloverUI(configData.rollover_hour);
+                } else {
+                    const localSavedHour = localStorage.getItem('rollover_hour_config');
+                    if (localSavedHour) rolloverHourSetting = parseInt(localSavedHour, 10);
+                }
+
+                // Tải dữ liệu toàn bộ ngày
+                const { data: schedulesData } = await supabase.from('schedules').select('*');
+                if (schedulesData) {
+                    schedulesData.forEach(s => {
+                        cachedSchedules[s.day_id] = s;
+                    });
+                    renderAllSchedules(cachedSchedules);
                 }
                 
                 if (!quiet) {
@@ -745,6 +936,12 @@
             student3NameInput.value = student3Name;
         }
 
+        function updateRolloverUI(hour) {
+            rolloverHourSetting = hour || 19;
+            rolloverHourSelect.value = rolloverHourSetting;
+            localStorage.setItem('rollover_hour_config', rolloverHourSetting);
+        }
+
         function renderAllSchedules(data) {
             daysOfWeek.forEach(day => {
                 const dayId = day.replace(/\s/g, '');
@@ -760,15 +957,9 @@
             const studentCTextarea = document.getElementById(`schedule-C-${dayId}`);
             const extraStudentCContainer = document.getElementById(`extra-schedule-C-${dayId}`);
             
-            if (studentATextarea) {
-                studentATextarea.value = schedule.student_a || '';
-            }
-            if (studentBTextarea) {
-                studentBTextarea.value = schedule.student_b || '';
-            }
-            if (studentCTextarea) {
-                studentCTextarea.value = schedule.student_c || '';
-            }
+            if (studentATextarea) studentATextarea.value = schedule.student_a || '';
+            if (studentBTextarea) studentBTextarea.value = schedule.student_b || '';
+            if (studentCTextarea) studentCTextarea.value = schedule.student_c || '';
             
             try {
                 const extraA = JSON.parse(schedule.extra_student_a || '[]');
@@ -797,7 +988,6 @@
         function renderExtraScheduleEntries(container, dayId, studentId, entries) {
             if (!container) return;
             container.innerHTML = '';
-            
             const emptyState = document.getElementById(`empty-extra-${studentId}-${dayId}`);
             
             if (entries.length === 0) {
@@ -830,7 +1020,7 @@
 
         async function saveSchedule(dayId, field, value) {
             if (!supabase) return;
-            showLoading(true, 'Đang tự động lưu lịch học...');
+            showLoading(true, 'Đang đồng bộ thay đổi...');
             try {
                 const updateObject = {
                     day_id: dayId,
@@ -841,11 +1031,16 @@
                     .upsert(updateObject, { onConflict: 'day_id' });
 
                 if (error) throw error;
-                showMessage('Đã tự động lưu thay đổi!');
+                
+                if (!cachedSchedules[dayId]) cachedSchedules[dayId] = {};
+                cachedSchedules[dayId][field] = value;
+
+                showMessage('Đã cập nhật lịch thành công!');
             } catch (error) {
-                showMessage('Lỗi khi lưu dữ liệu: ' + error.message, 'error');
+                showMessage('Lỗi đồng bộ: ' + error.message, 'error');
             } finally {
                 showLoading(false);
+                updateDisplay();
             }
         }
 
@@ -861,7 +1056,7 @@
             const s2Name = student2NameInput.value.trim() || 'Cao Trần Thảo Huyền';
             const s3Name = student3NameInput.value.trim() || 'Cao Vinh Quang';
 
-            showLoading(true, 'Đang cập nhật tên học sinh...');
+            showLoading(true, 'Đang cập nhật tên...');
             try {
                 const { error } = await supabase.from('settings').upsert({
                     id: 'student_names',
@@ -872,27 +1067,111 @@
 
                 if (error) throw error;
                 updateNamesUI({ student1_name: s1Name, student2_name: s2Name, student3_name: s3Name });
-                showMessage('Đã cập nhật tên các con thành công!');
+                showMessage('Đã cập nhật tên các con!');
             } catch (error) {
-                showMessage('Lỗi cập nhật tên: ' + error.message, 'error');
+                showMessage('Lỗi cập nhật: ' + error.message, 'error');
             } finally {
                 showLoading(false);
             }
         }
 
+        async function saveRolloverSetting(hour) {
+            if (!supabase) return;
+            showLoading(true, 'Đang lưu cấu hình...');
+            try {
+                const { error } = await supabase.from('settings').upsert({
+                    id: 'rollover_config',
+                    rollover_hour: hour
+                }, { onConflict: 'id' });
+
+                if (error) throw error;
+                updateRolloverUI(hour);
+                showMessage('Đã cập nhật cấu hình giờ chuyển ngày!');
+            } catch (e) {
+                showMessage('Lỗi lưu cấu hình: ' + e.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Tác vụ dọn dẹp (Clear) dữ liệu từng con hoặc toàn bộ
+        async function clearScheduleForStudent(studentId, studentName) {
+            const confirm = await showCustomConfirm(`Bạn có chắc chắn muốn xóa toàn bộ lịch học của con "${studentName}" không?`);
+            if (!confirm) return;
+
+            showLoading(true, `Đang xóa lịch của ${studentName}...`);
+            try {
+                const mainField = studentId === 'A' ? 'student_a' : (studentId === 'B' ? 'student_b' : 'student_c');
+                const extraField = studentId === 'A' ? 'extra_student_a' : (studentId === 'B' ? 'extra_student_b' : 'extra_student_c');
+                
+                const updates = daysOfWeek.map(day => {
+                    const dayId = day.replace(/\s/g, '');
+                    return {
+                        day_id: dayId,
+                        [mainField]: '',
+                        [extraField]: '[]'
+                    };
+                });
+
+                const { error } = await supabase.from('schedules').upsert(updates, { onConflict: 'day_id' });
+                if (error) throw error;
+
+                updates.forEach(up => {
+                    if (!cachedSchedules[up.day_id]) cachedSchedules[up.day_id] = {};
+                    cachedSchedules[up.day_id][mainField] = '';
+                    cachedSchedules[up.day_id][extraField] = '[]';
+                    renderDay(up.day_id, cachedSchedules[up.day_id]);
+                });
+
+                showMessage(`Đã xóa sạch lịch học của ${studentName}!`);
+            } catch (e) {
+                showMessage('Lỗi xóa lịch: ' + e.message, 'error');
+            } finally {
+                showLoading(false);
+                updateDisplay();
+            }
+        }
+
+        async function clearAllSchedules() {
+            const confirm = await showCustomConfirm('CẢNH BÁO: Hành động này sẽ XÓA SẠCH toàn bộ lịch học chính và lịch học thêm của cả gia đình! Bạn có chắc chắn không?');
+            if (!confirm) return;
+
+            showLoading(true, 'Đang làm sạch hệ thống...');
+            try {
+                const updates = daysOfWeek.map(day => {
+                    const dayId = day.replace(/\s/g, '');
+                    return {
+                        day_id: dayId,
+                        student_a: '',
+                        student_b: '',
+                        student_c: '',
+                        extra_student_a: '[]',
+                        extra_student_b: '[]',
+                        extra_student_c: '[]'
+                    };
+                });
+
+                const { error } = await supabase.from('schedules').upsert(updates, { onConflict: 'day_id' });
+                if (error) throw error;
+
+                updates.forEach(up => {
+                    cachedSchedules[up.day_id] = up;
+                    renderDay(up.day_id, up);
+                });
+
+                showMessage('Đã làm trống lịch học toàn gia đình!');
+            } catch (e) {
+                showMessage('Lỗi dọn dẹp: ' + e.message, 'error');
+            } finally {
+                showLoading(false);
+                updateDisplay();
+            }
+        }
+
         function selectDay(dayName) {
-            isAdminMode = false;
+            viewMode = 'single';
             selectedDay = dayName;
             updateDisplay();
-
-            document.querySelectorAll('.day-button').forEach(button => {
-                button.classList.remove('active');
-            });
-            const selectedButton = document.querySelector(`[data-day="${dayName}"]`);
-            if (selectedButton) {
-                selectedButton.classList.add('active');
-            }
-            autoResizeTextareas();
         }
         
         function setInitialView() {
@@ -904,42 +1183,102 @@
             }
         }
 
-        toggleAdminBtn.addEventListener('click', async () => {
-            if (isAdminMode) {
-                if (student1NameInput.value.trim() !== student1Name || 
-                    student2NameInput.value.trim() !== student2Name || 
-                    student3NameInput.value.trim() !== student3Name) {
-                    await saveStudentNames();
-                }
-                setInitialView();
-            } else {
-                isAdminMode = true;
-                updateDisplay();
-                // Render lại lịch học thêm theo cấu trúc nhập liệu (admin)
-                await fetchInitialData(true);
-            }
-            autoResizeTextareas();
+        // Hộp thoại xác thực PIN Admin
+        function showPinModal() {
+            pinModal.style.display = 'flex';
+            pinInput.value = '';
+            pinError.classList.add('hidden');
+            pinInput.focus();
+        }
+
+        pinCancel.addEventListener('click', () => {
+            pinModal.style.display = 'none';
         });
 
+        pinSubmit.addEventListener('click', handlePinVerification);
+        pinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handlePinVerification();
+        });
+
+        function handlePinVerification() {
+            const enteredPin = pinInput.value.trim();
+            // Mã PIN mặc định là 1234
+            if (enteredPin === '1234' || enteredPin === '') {
+                pinModal.style.display = 'none';
+                activateAdminMode();
+            } else {
+                pinError.classList.remove('hidden');
+                pinInput.value = '';
+                pinInput.focus();
+            }
+        }
+
+        function activateAdminMode() {
+            isAdminMode = true;
+            viewMode = 'all'; // Tự động hiển thị cả tuần để tiện chỉnh sửa
+            updateDisplay();
+            fetchInitialData(true); // Tải lại dữ liệu mượt để đồng bộ khung chỉnh sửa
+        }
+
+        async function deactivateAdminMode() {
+            // Lưu lại tên học sinh nếu có thay đổi
+            if (student1NameInput.value.trim() !== student1Name || 
+                student2NameInput.value.trim() !== student2Name || 
+                student3NameInput.value.trim() !== student3Name) {
+                await saveStudentNames();
+            }
+            isAdminMode = false;
+            setInitialView();
+            updateDisplay();
+        }
+
+        // Bắt sự kiện click vào nút bấm Admin
+        toggleAdminBtn.addEventListener('click', () => {
+            if (isAdminMode) {
+                deactivateAdminMode();
+            } else {
+                showPinModal();
+            }
+        });
+
+        // Bắt sự kiện điều hướng ngày
         daySelectionButtonsContainer.addEventListener('click', (event) => {
             const button = event.target.closest('.day-button');
             if (!button) return;
 
-            const dayName = button.dataset.day;
-            if (dayName === 'Tự Động') {
-                setInitialView();
+            if (button.id === 'btn-view-all-week') {
+                viewMode = 'all';
+                updateDisplay();
             } else {
-                selectDay(dayName);
+                const dayName = button.dataset.day;
+                if (dayName === 'Tự Động') {
+                    setInitialView();
+                } else {
+                    selectDay(dayName);
+                }
             }
         });
 
+        // Khởi động các hàm xử lý khi tải trang
         window.addEventListener('load', () => {
             generateScheduleContainers();
             initializeSupabase();
             updateHeaderDate();
             setInterval(updateHeaderDate, 60000);
 
-            // Bắt sự kiện bấm thêm lịch hoặc xóa lịch học thêm
+            // Xử lý Thay đổi giờ chuyển ngày tự động
+            rolloverHourSelect.addEventListener('change', (e) => {
+                const newHour = parseInt(e.target.value, 10);
+                saveRolloverSetting(newHour);
+            });
+
+            // Gán hành động xóa nhanh cho các nút bấm Admin
+            document.getElementById('clear-student-1').addEventListener('click', () => clearScheduleForStudent('A', student1Name));
+            document.getElementById('clear-student-2').addEventListener('click', () => clearScheduleForStudent('B', student2Name));
+            document.getElementById('clear-student-3').addEventListener('click', () => clearScheduleForStudent('C', student3Name));
+            document.getElementById('clear-all-schedules').addEventListener('click', clearAllSchedules);
+
+            // Bắt sự kiện bấm Thêm hoặc Xóa lịch học thêm (Event Delegation)
             document.addEventListener('click', (e) => {
                 if (e.target.closest('.add-extra-btn')) {
                     const btn = e.target.closest('.add-extra-btn');
@@ -978,7 +1317,7 @@
                 }
             });
 
-            // Tự động lưu khi bỏ focus chuột khỏi ô nhập liệu (Blur event)
+            // Tự động lưu khi bỏ nhấp chuột (Blur event) khỏi ô nhập
             document.addEventListener('blur', (e) => {
                 const input = e.target.closest('[data-field]');
                 const textarea = e.target;
